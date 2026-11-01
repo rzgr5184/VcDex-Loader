@@ -734,6 +734,9 @@ void DrawUi() {
     if (!busy && hasSelection && ImGui::IsKeyPressed(ImGuiKey_Enter, false))
         app::LoadSelectedGame();
 
+    if (!busy && state.updateAvailable && ImGui::IsKeyPressed(ImGuiKey_F5, false))
+        app::StartSelfUpdate();
+
     // Hidden Settings placeholder hit test is part of the sidebar.
 
     DrawToast(state, width, height, busy);
