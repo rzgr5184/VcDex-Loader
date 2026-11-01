@@ -1,0 +1,76 @@
+#pragma once
+
+#include <filesystem>
+#include <string>
+#include <vector>
+
+#include <windows.h>
+
+struct RemoteFile {
+    std::string path;
+    std::string url;
+    std::string sha256;
+};
+
+struct GameEntry {
+    std::string id;
+    std::string name;
+    std::string subtitle;
+    std::string status;
+    std::string tag;
+    std::string process;
+    std::string appid;
+    std::string installDir;
+    std::string exeRel;
+    std::string dllRel;
+    std::string injectorRel;
+    int accent = 0;
+
+    std::vector<RemoteFile> files;
+    bool ready = false;
+};
+
+struct AppUiState {
+    std::vector<GameEntry> games;
+
+    int selected = 0;
+
+    bool online = false;
+    bool busy = false;
+    bool checking = true;
+    bool ready = false;
+
+    float progress = 0.0f;
+    bool indeterminate = false;
+    std::string phase;
+    std::string detail;
+
+    bool updateAvailable = false;
+    std::string localVersion;
+    std::string remoteVersion;
+
+    std::string toast;
+    bool toastError = false;
+    float toastTimer = 0.0f;
+};
+
+namespace app {
+
+void Init(HWND hwnd);
+AppUiState Snapshot();
+
+void Tick(float dt);
+
+void SelectGame(int index);
+void LoadSelectedGame();
+void StartSelfUpdate();
+void OpenSelectedFolder();
+
+void ClearToast();
+
+bool ExitRequested();
+
+std::filesystem::path BaseDir();
+std::filesystem::path DataDir();
+
+} // namespace app

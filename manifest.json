@@ -1,0 +1,54 @@
+{
+    "loader_version":  "1.0.0",
+    "loader_url":  "dist/VcDexLoader.exe",
+    "loader_sha256":  "f2bd6ceb4223a5db82934a92326bb7a6e67f4603b584a19bc37f0581224188a6",
+    "games":  [
+                  {
+                      "id":  "redmatch2",
+                      "subtitle":  "Unity Engine  -  FPS",
+                      "files":  [
+                                    {
+                                        "path":  "redmatch2/LaynexRm2.dll",
+                                        "url":  "dist/redmatch2/LaynexRm2.dll",
+                                        "sha256":  "39b82cf4f98fd12e25b9722f1a18e5df8a093826f5ae439b767e4f4c6097d4ce"
+                                    },
+                                    {
+                                        "path":  "redmatch2/LaynexRm2Injector.exe",
+                                        "url":  "dist/redmatch2/LaynexRm2Injector.exe",
+                                        "sha256":  "21aa7037bbc4c4b1119908a7f2c08d78c25376f7e4177c9fc2e484e58b8c2454"
+                                    }
+                                ],
+                      "process":  "Redmatch 2.exe",
+                      "dll":  "redmatch2/LaynexRm2.dll",
+                      "name":  "Redmatch 2",
+                      "status":  "Undetected",
+                      "accent":  0,
+                      "injector":  "redmatch2/LaynexRm2Injector.exe",
+                      "appid":  "1280770",
+                      "tag":  "Bypass Injector",
+                      "installdir":  "Redmatch 2",
+                      "exe_rel":  "Redmatch 2.exe"
+                  },
+                  {
+                      "id":  "onearmedrobber",
+                      "subtitle":  "Unreal Engine 4  -  FPS",
+                      "files":  [
+                                    {
+                                        "path":  "onearmedrobber/one_armed_robber_int.dll",
+                                        "url":  "dist/onearmedrobber/one_armed_robber_int.dll",
+                                        "sha256":  "cc694b9ce52fa121a5f3d8f8996db4b94af25b5233a219053308d958d227bb56"
+                                    }
+                                ],
+                      "process":  "OAR-Win64-Shipping.exe",
+                      "dll":  "onearmedrobber/one_armed_robber_int.dll",
+                      "name":  "One Armed Robber",
+                      "status":  "Undetected",
+                      "accent":  1,
+                      "injector":  "",
+                      "appid":  "2551020",
+                      "tag":  "Internal DLL",
+                      "installdir":  "One-armed robber",
+                      "exe_rel":  "OAR\\Binaries\\Win64\\OAR-Win64-Shipping.exe"
+                  }
+              ]
+}

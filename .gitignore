@@ -1,0 +1,9 @@
+build/
+out/
+*.user
+*.suo
+*.VC.db
+.vs/
+data/
+*.update.exe
+*.tmp
