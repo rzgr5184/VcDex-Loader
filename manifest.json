@@ -1,7 +1,7 @@
 {
     "loader_version":  "1.0.0",
     "loader_url":  "dist/VcDexLoader.exe",
-    "loader_sha256":  "1ed5592bd7b38515ba9bafda979e94c01240959ae56a096ef3d6ca7d733bd481",
+    "loader_sha256":  "9b1b268a6f5552f321e204f886943122c3637281a449e0489a1ea56d7e8fb3c8",
     "games":  [
                   {
                       "id":  "redmatch2",

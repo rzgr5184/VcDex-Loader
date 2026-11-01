@@ -14,6 +14,8 @@ Oyun hilelerini tek tikla yukleyen, GitHub uzerinden otomatik guncellenen Window
 
 Loader oyunu gerekirse Steam uzerinden baslatir, DLL'i enjekte eder ve sonucu bildirir.
 
+Guncelleme varsa ustte "Update available" bandi cikar. **RESTART & UPDATE** butonuna bas veya `F5` tusuna bas; loader kendini indirip yeniler ve yeniden baslar.
+
 | Oyun | Enjeksiyon | Tuslar |
 | --- | --- | --- |
 | Redmatch 2 | `LaynexRm2Injector.exe` (bypass, erken enjeksiyon) | `INSERT` menu / `END` unload |

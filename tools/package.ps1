@@ -142,5 +142,5 @@ Write-Host ("  manifest.json      : {0}" -f $manifestPath)
 Write-Host ("  loader sha256      : {0}" -f $loaderHash)
 Write-Host ("  yerel calistirilabilir: {0}" -f (Join-Path $root "VcDexLoader.exe"))
 Write-Host ""
-Write-Host "Yayinlamak icin:  git add -A ; git commit -m \"release $Version\" ; git push" -ForegroundColor Yellow
+Write-Host "Yayinlamak icin:  git add -A ; git commit -m `"release $Version`" ; git push" -ForegroundColor Yellow
 

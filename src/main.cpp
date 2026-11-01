@@ -927,7 +927,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         WS_EX_APPWINDOW,
         windowClass.lpszClassName,
         L"VcDex Loader",
-        WS_POPUP,
+        WS_POPUP | WS_MINIMIZEBOX,
         (screenW - windowW) / 2,
         (screenH - windowH) / 2,
         windowW, windowH,
