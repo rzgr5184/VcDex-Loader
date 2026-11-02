@@ -1,10 +1,10 @@
 {
     "schema":  2,
-    "generated_at":  "2026-11-02T16:12:28Z",
-    "loader_version":  "1.2.0",
+    "generated_at":  "2026-11-02T16:20:21Z",
+    "loader_version":  "1.2.1",
     "loader_url":  "dist/VcDexLoader.exe",
-    "loader_sha256":  "94900379b1cc7d863d4cbf2a06ec244f9ce943e11739b08a4a7ac59170a9d44b",
-    "loader_size":  1149952,
+    "loader_sha256":  "757a502ed9f96f5134f41d21093b7c8db23e97ffbcd62b38141ad48a8190a695",
+    "loader_size":  1151488,
     "min_loader":  "1.2.0",
     "games":  [
                   {

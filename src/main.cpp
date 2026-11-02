@@ -528,12 +528,14 @@ void DrawUpdateBanner(const AppUiState& state, float x, float width, float y, bo
 
     const float buttonW = 172.0f * g_scale;
     const float buttonH = 32.0f * g_scale;
-    CustomButton("##update_now", ImVec2(x + width - buttonW - 12.0f * g_scale,
-                                        y + (height - buttonH) * 0.5f),
-                 ImVec2(buttonW, buttonH), "RESTART & UPDATE",
-                 kViolet, Mix(kViolet, IM_COL32(255, 255, 255, 255), 0.18f),
-                 IM_COL32(18, 14, 28, 255), g_fonts.medium, 10.5f * g_scale,
-                 8.0f * g_scale, !busy);
+    if (CustomButton("##update_now", ImVec2(x + width - buttonW - 12.0f * g_scale,
+                                            y + (height - buttonH) * 0.5f),
+                     ImVec2(buttonW, buttonH), busy ? "UPDATING..." : "RESTART & UPDATE",
+                     kViolet, Mix(kViolet, IM_COL32(255, 255, 255, 255), 0.18f),
+                     IM_COL32(18, 14, 28, 255), g_fonts.medium, 10.5f * g_scale,
+                     8.0f * g_scale, true)) {
+        app::StartSelfUpdate();
+    }
 }
 
 void DrawGameCard(const GameEntry& game, int index, ImVec2 pos, ImVec2 size,

@@ -3,8 +3,14 @@
 Oyun hilelerini tek tikla yukleyen, GitHub uzerinden otomatik guncellenen Windows loader.
 
 - **Yapimci:** Laynex
-- **Surum:** 1.2.0
+- **Surum:** 1.2.1
 - **Platform:** Windows 10 / 11 (x64)
+
+## Yenilikler (1.2.1)
+
+- **Update butonu duzeltildi:** `RESTART & UPDATE` butonu artik gercekten guncellemeyi baslatiyor (onceki surumlerde tiklama yok sayiliyordu).
+- Butona basildiginda aninda "Preparing update" geri bildirimi ve islem surerken "UPDATING..." etiketi.
+- `F5` davranisi korundu: guncelleme varsa baslatir, yoksa dosya dogrulama yapar.
 
 ## Yenilikler (1.2.0)
 

@@ -1316,7 +1316,21 @@ void LoadSelectedGame() {
 }
 
 void StartSelfUpdate() {
-    if (g_busy.exchange(true)) return;
+    if (g_busy.exchange(true)) {
+        SetToast("Islem suruyor, lutfen bekleyin.", false);
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        g_state.busy = true;
+        g_state.phase = "Preparing update";
+        g_state.detail = "Preparing VcDex Loader update...";
+        g_state.progress = 0.03f;
+        g_state.indeterminate = true;
+    }
+
+    Log("Self-update requested by user");
     std::thread(UpdateWorker).detach();
 }
 
