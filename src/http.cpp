@@ -88,7 +88,7 @@ bool OpenGetRequest(const std::wstring& url, int timeoutSeconds,
     }
 
     const int timeoutMs = timeoutSeconds * 1000;
-    WinHttpSetTimeouts(handles.session, 10000, 10000, timeoutMs, timeoutMs);
+    WinHttpSetTimeouts(handles.session, 6000, 6000, timeoutMs, timeoutMs);
 
     handles.connection = WinHttpConnect(handles.session, parts.host.c_str(), parts.port, 0);
     if (!handles.connection) {
@@ -164,9 +164,21 @@ bool Get(const std::wstring& url, std::string& out, std::wstring& error, int tim
 }
 
 bool Download(const std::wstring& url, const std::filesystem::path& destination,
-              std::wstring& error, int timeoutSeconds) {
+              std::wstring& error, int timeoutSeconds, const ProgressFn& onProgress) {
     RequestHandles handles;
     if (!OpenGetRequest(url, timeoutSeconds, handles, error)) return false;
+
+    std::uint64_t contentLength = 0;
+    {
+        DWORD length = 0;
+        DWORD lengthSize = sizeof(length);
+        if (WinHttpQueryHeaders(handles.request,
+                                WINHTTP_QUERY_CONTENT_LENGTH | WINHTTP_QUERY_FLAG_NUMBER,
+                                WINHTTP_HEADER_NAME_BY_INDEX, &length, &lengthSize,
+                                WINHTTP_NO_HEADER_INDEX)) {
+            contentLength = length;
+        }
+    }
 
     std::error_code ec;
     std::filesystem::create_directories(destination.parent_path(), ec);
@@ -178,6 +190,7 @@ bool Download(const std::wstring& url, const std::filesystem::path& destination,
     }
 
     bool ok = true;
+    std::uint64_t received = 0;
     std::vector<char> buffer(128 * 1024);
 
     for (;;) {
@@ -204,6 +217,9 @@ bool Download(const std::wstring& url, const std::filesystem::path& destination,
             ok = false;
             break;
         }
+
+        received += read;
+        if (onProgress) onProgress(received, contentLength);
     }
 
     fclose(file);

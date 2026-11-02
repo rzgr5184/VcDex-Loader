@@ -3,8 +3,21 @@
 Oyun hilelerini tek tikla yukleyen, GitHub uzerinden otomatik guncellenen Windows loader.
 
 - **Yapimci:** Laynex
-- **Surum:** 1.1.0
+- **Surum:** 1.2.0
 - **Platform:** Windows 10 / 11 (x64)
+
+## Yenilikler (1.2.0)
+
+- **Tam otomatik guncelleme:** her acilista once manifest alinir, ardindan tum dosyalar SHA-256 ile dogrulanir. Eksik, bozuk veya eski dosya varsa sessizce yeniden indirilir.
+- **Exe hash kontrolu:** loader kendi SHA-256'sini manifest ile karsilastirir. Surum ayni olsa bile eski/degistirilmis exe otomatik yenilenir (test klasorundeki eski kopyalar dahil).
+- **Coklu sunucu:** GitHub raw basarisiz olursa jsDelivr ve GitHub raw yedekleri otomatik denenir.
+- **Dayanikli indirme:** 3 deneme, yedek sunucu gecisi, `.part` gecici dosya, hash + boyut dogrulama, atomik degistirme ve kilitli dosya icin tekrar deneme.
+- **Yedekli self-update:** eski exe `*.old` olarak saklanir; degistirme basarisiz olursa geri alinir. Yardimci bat PID bekler, 80 kez dener ve sonucu loglar.
+- **Arka plan kontrolu:** uygulama acikken 10 dakikada bir otomatik kontrol; yeni dosyalar sessizce indirilir, yeni loader surumu bildirilir.
+- **Kurulum onarimi:** `CHECK FILES` / `F5` ile tum kurulumu elle dogrulayip onarabilirsiniz.
+- **Guncelleme gunlugu:** `data/logs/update.log` (1 MB'ta devirli) tum adimlari kaydeder.
+- **Eski dosya temizligi:** manifestten kaldirilan dosyalar ve yarim kalan `.part`/`.tmp` dosyalari otomatik silinir.
+- **Yazilamayan klasor destegi:** exe klasoru yazilamazsa veriler `%LOCALAPPDATA%\VcDex` altinda tutulur.
 
 ## Yenilikler (1.1.0)
 
@@ -22,7 +35,9 @@ Oyun hilelerini tek tikla yukleyen, GitHub uzerinden otomatik guncellenen Window
 
 Loader oyunu gerekirse Steam uzerinden baslatir, DLL'i enjekte eder ve sonucu bildirir.
 
-Guncelleme varsa ustte "Update available" bandi cikar. **RESTART & UPDATE** butonuna bas veya `F5` tusuna bas; loader kendini indirip yeniler ve yeniden baslar.
+Guncelleme varsa acilista splash sirasinda otomatik uygulanir. Uygulama acikken yeni surum bulunursa ustte "Update available" bandi cikar; **RESTART & UPDATE** veya `F5` ile yenilenir. `CHECK FILES` butonu tum dosyalari dogrulayip onarir.
+
+Elle kontrol: `F5` (guncelleme yoksa dosya dogrulama yapar). Guncelleme gunlugu: `data/logs/update.log`.
 
 | Oyun | Enjeksiyon | Tuslar |
 | --- | --- | --- |
@@ -41,9 +56,15 @@ data/
     LaynexRm2Injector.exe
   onearmedrobber/
     one_armed_robber_int.dll
+  covers/
+    rm2.png
+    oar.png
+  manifest.json        <- son bilinen manifest (offline yedek)
+  logs/update.log      <- guncelleme gunlugu
+  .managed             <- yonetilen dosya listesi (eski dosya temizligi)
 ```
 
-Loader ilk acilista `manifest.json` uzerinden eksik/guncel olmayan dosyalari `data` klasorune indirir.
+Loader her acilista manifesti alir, tum dosyalari hash ile dogrular ve eksik/bozuk/eski olanlari indirir. Ayni exe farkli bir klasorden calistirilsa bile kendi klasorundeki `data` dizinini kurar ve guncel hale getirir.
 
 ## Guncelleme yayinlama (gelistirici)
 

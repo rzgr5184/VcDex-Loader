@@ -102,6 +102,7 @@ foreach ($game in $games) {
             path   = $relative
             url    = "dist/$relative"
             sha256 = $hash
+            size   = (Get-Item $target).Length
         }
         Write-Host ("  + dist/{0}  [{1}]" -f $relative, $hash.Substring(0, 12))
     }
@@ -119,6 +120,7 @@ foreach ($game in $games) {
             path   = $game.cover
             url    = "dist/$($game.cover)"
             sha256 = $coverHash
+            size   = (Get-Item $coverTarget).Length
         }
         Write-Host ("  + dist/{0}  [{1}]" -f $game.cover, $coverHash.Substring(0, 12))
     }
@@ -145,10 +147,14 @@ foreach ($game in $games) {
 $loaderHash = (Get-Sha256 $exe)
 
 $manifest = [ordered]@{
-    loader_version = $Version
-    loader_url     = "dist/VcDexLoader.exe"
-    loader_sha256  = $loaderHash
-    games          = $manifestGames
+    schema          = 2
+    generated_at    = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    loader_version  = $Version
+    loader_url      = "dist/VcDexLoader.exe"
+    loader_sha256   = $loaderHash
+    loader_size     = (Get-Item $exe).Length
+    min_loader      = "1.2.0"
+    games           = $manifestGames
 }
 
 $json = $manifest | ConvertTo-Json -Depth 12

@@ -517,11 +517,14 @@ void DrawUpdateBanner(const AppUiState& state, float x, float width, float y, bo
     draw->AddCircleFilled(ImVec2(x + 20.0f * g_scale, y + height * 0.5f),
                           4.0f * g_scale, kViolet, 12);
 
+    const bool binaryRepair = state.localVersion == state.remoteVersion;
     DrawTextAt(draw, g_fonts.medium, 12.5f * g_scale,
-             ImVec2(x + 32.0f * g_scale, y + 10.0f * g_scale), kText, "Update available");
+             ImVec2(x + 32.0f * g_scale, y + 10.0f * g_scale), kText,
+             binaryRepair ? "Repair available" : "Update available");
     DrawTextAt(draw, g_fonts.body, 10.5f * g_scale,
              ImVec2(x + 32.0f * g_scale, y + 28.0f * g_scale), kTextDim,
-             "v" + state.localVersion + "  ->  v" + state.remoteVersion);
+             binaryRepair ? "Local executable differs from the official build"
+                          : "v" + state.localVersion + "  ->  v" + state.remoteVersion);
 
     const float buttonW = 172.0f * g_scale;
     const float buttonH = 32.0f * g_scale;
@@ -867,6 +870,7 @@ void DrawUi() {
 
     const AppUiState state = app::Snapshot();
     const bool busy = state.busy;
+    const bool working = busy || state.backgroundSync;
     const float scale = g_scale;
 
     static float coverRefresh = 0.0f;
@@ -944,7 +948,7 @@ void DrawUi() {
 
     float contentY = 96.0f * scale;
     if (state.updateAvailable) {
-        DrawUpdateBanner(state, contentX, contentW, contentY, busy || booting);
+        DrawUpdateBanner(state, contentX, contentW, contentY, working || booting);
         contentY += 66.0f * scale;
     }
 
@@ -974,7 +978,7 @@ void DrawUi() {
         if (pos.y + cardH > height - 112.0f * scale) break;
 
         DrawGameCard(state.games[static_cast<std::size_t>(i)], i, pos,
-                     ImVec2(cardW, cardH), state.selected == i, busy || booting);
+                     ImVec2(cardW, cardH), state.selected == i, working || booting);
     }
 
     // Footer
@@ -1001,7 +1005,18 @@ void DrawUi() {
     const float loadH = 50.0f * scale;
     const ImVec2 loadPos(width - 30.0f * scale - loadW, height - 75.0f * scale);
 
-    const bool canLoad = hasSelection && !busy && !booting && selectedGame != nullptr;
+    const bool canLoad = hasSelection && !working && !booting && selectedGame != nullptr;
+
+    if (CustomButton("##check_files",
+                     ImVec2(loadPos.x - 130.0f * scale - 10.0f * scale -
+                                124.0f * scale - 10.0f * scale,
+                            loadPos.y + 7.0f * scale),
+                     ImVec2(124.0f * scale, 36.0f * scale), "CHECK FILES",
+                     IM_COL32(255, 255, 255, 8), IM_COL32(255, 255, 255, 16),
+                     kTextDim, g_fonts.medium, 9.5f * scale, 9.0f * scale,
+                     !working && !booting)) {
+        app::CheckFiles();
+    }
 
     if (CustomButton("##open_folder", ImVec2(loadPos.x - 130.0f * scale - 10.0f * scale,
                                              loadPos.y + 7.0f * scale),
@@ -1020,11 +1035,15 @@ void DrawUi() {
     }
 
     // Keyboard shortcut
-    if (!busy && !booting && hasSelection && ImGui::IsKeyPressed(ImGuiKey_Enter, false))
+    if (!working && !booting && hasSelection && ImGui::IsKeyPressed(ImGuiKey_Enter, false))
         app::LoadSelectedGame();
 
-    if (!busy && !booting && state.updateAvailable && ImGui::IsKeyPressed(ImGuiKey_F5, false))
-        app::StartSelfUpdate();
+    if (!working && !booting && ImGui::IsKeyPressed(ImGuiKey_F5, false)) {
+        if (state.updateAvailable)
+            app::StartSelfUpdate();
+        else
+            app::CheckFiles();
+    }
 
     // Hidden Settings placeholder hit test is part of the sidebar.
 

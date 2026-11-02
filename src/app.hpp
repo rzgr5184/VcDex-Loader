@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -10,6 +11,7 @@ struct RemoteFile {
     std::string path;
     std::string url;
     std::string sha256;
+    std::uint64_t size = 0;
 };
 
 struct GameEntry {
@@ -40,6 +42,7 @@ struct AppUiState {
     bool busy = false;
     bool checking = true;
     bool ready = false;
+    bool backgroundSync = false;
 
     float progress = 0.0f;
     bool indeterminate = false;
@@ -49,6 +52,8 @@ struct AppUiState {
     bool updateAvailable = false;
     std::string localVersion;
     std::string remoteVersion;
+
+    int filesUpdated = 0;
 
     std::string toast;
     bool toastError = false;
@@ -65,6 +70,7 @@ void Tick(float dt);
 void SelectGame(int index);
 void LoadSelectedGame();
 void StartSelfUpdate();
+void CheckFiles();
 void OpenSelectedFolder();
 
 void ClearToast();
