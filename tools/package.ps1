@@ -61,6 +61,8 @@ $games = @(
         dll      = "redmatch2/LaynexRm2.dll"
         injector = "redmatch2/LaynexRm2Injector.exe"
         accent   = 0
+        cover    = "covers/rm2.png"
+        cover_source = "res/rm2.png"
         files    = @("redmatch2/LaynexRm2.dll", "redmatch2/LaynexRm2Injector.exe")
     },
     @{
@@ -76,6 +78,8 @@ $games = @(
         dll      = "onearmedrobber/one_armed_robber_int.dll"
         injector = ""
         accent   = 1
+        cover    = "covers/oar.png"
+        cover_source = "res/oar.png"
         files    = @("onearmedrobber/one_armed_robber_int.dll")
     }
 )
@@ -102,6 +106,23 @@ foreach ($game in $games) {
         Write-Host ("  + dist/{0}  [{1}]" -f $relative, $hash.Substring(0, 12))
     }
 
+    if ($game.cover) {
+        $coverSource = Join-Path $root ($game.cover_source -replace '/', '\')
+        if (-not (Test-Path $coverSource)) { throw "Kapak dosyasi yok: $coverSource" }
+
+        $coverTarget = Join-Path $dist ($game.cover -replace '/', '\')
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $coverTarget) | Out-Null
+        Copy-Item $coverSource $coverTarget -Force
+
+        $coverHash = (Get-Sha256 $coverTarget)
+        $fileEntries += @{
+            path   = $game.cover
+            url    = "dist/$($game.cover)"
+            sha256 = $coverHash
+        }
+        Write-Host ("  + dist/{0}  [{1}]" -f $game.cover, $coverHash.Substring(0, 12))
+    }
+
     $manifestGames += @{
         id         = $game.id
         name       = $game.name
@@ -114,6 +135,7 @@ foreach ($game in $games) {
         exe_rel    = $game.exe_rel
         dll        = $game.dll
         injector   = $game.injector
+        cover      = $game.cover
         accent     = $game.accent
         files      = $fileEntries
     }

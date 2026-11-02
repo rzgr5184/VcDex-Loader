@@ -3,8 +3,16 @@
 Oyun hilelerini tek tikla yukleyen, GitHub uzerinden otomatik guncellenen Windows loader.
 
 - **Yapimci:** Laynex
-- **Surum:** 1.0.0
+- **Surum:** 1.1.0
 - **Platform:** Windows 10 / 11 (x64)
+
+## Yenilikler (1.1.0)
+
+- Animasyonlu acilis ekrani: donen VcDex logosu, yumusak progress ve durum metni.
+- Guncelleme varsa acilista otomatik uygulanir (splash sirasinda indirilir ve yeniden baslatilir).
+- Oyun kartlarinda gercek kapak gorselleri: Redmatch 2 ve One Armed Robber.
+- Kart hover animasyonu, aurora arka plan, toast slide-in ve yumusak gecisler.
+- Gorseller exe icine gomuldu (`res/vc.png`, `res/rm2.png`, `res/oar.png`); harici dosya gerekmez.
 
 ## Kullanim
 

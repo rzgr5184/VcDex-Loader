@@ -248,10 +248,12 @@ std::vector<GameEntry> DefaultGames() {
         game.exeRel = "Redmatch 2.exe";
         game.dllRel = "redmatch2/LaynexRm2.dll";
         game.injectorRel = "redmatch2/LaynexRm2Injector.exe";
+        game.coverRel = "covers/rm2.png";
         game.accent = 0;
         game.files = {
             MakeRemoteFile(game.dllRel),
             MakeRemoteFile(game.injectorRel),
+            MakeRemoteFile(game.coverRel),
         };
         games.push_back(std::move(game));
     }
@@ -269,9 +271,11 @@ std::vector<GameEntry> DefaultGames() {
         game.exeRel = "OAR\\Binaries\\Win64\\OAR-Win64-Shipping.exe";
         game.dllRel = "onearmedrobber/one_armed_robber_int.dll";
         game.injectorRel = "";
+        game.coverRel = "covers/oar.png";
         game.accent = 1;
         game.files = {
             MakeRemoteFile(game.dllRel),
+            MakeRemoteFile(game.coverRel),
         };
         games.push_back(std::move(game));
     }
@@ -319,6 +323,7 @@ bool ParseManifest(const std::string& body, std::vector<GameEntry>& games,
         game.exeRel = item.At("exe_rel").AsString();
         game.dllRel = item.At("dll").AsString();
         game.injectorRel = item.At("injector").AsString();
+        game.coverRel = item.At("cover").AsString();
         game.accent = static_cast<int>(item.At("accent").AsNumber(i));
 
         const json::Value& filesValue = item.At("files");

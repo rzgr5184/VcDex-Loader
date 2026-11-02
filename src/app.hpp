@@ -24,6 +24,7 @@ struct GameEntry {
     std::string exeRel;
     std::string dllRel;
     std::string injectorRel;
+    std::string coverRel;
     int accent = 0;
 
     std::vector<RemoteFile> files;

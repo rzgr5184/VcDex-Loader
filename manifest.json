@@ -1,7 +1,7 @@
 {
-    "loader_version":  "1.0.0",
+    "loader_version":  "1.1.0",
     "loader_url":  "dist/VcDexLoader.exe",
-    "loader_sha256":  "9b1b268a6f5552f321e204f886943122c3637281a449e0489a1ea56d7e8fb3c8",
+    "loader_sha256":  "0610e5644fa6baecb9a3d8a4bb16b59120fba2f8d4be7a28d1211d7a5aeae09e",
     "games":  [
                   {
                       "id":  "redmatch2",
@@ -16,11 +16,17 @@
                                         "path":  "redmatch2/LaynexRm2Injector.exe",
                                         "url":  "dist/redmatch2/LaynexRm2Injector.exe",
                                         "sha256":  "21aa7037bbc4c4b1119908a7f2c08d78c25376f7e4177c9fc2e484e58b8c2454"
+                                    },
+                                    {
+                                        "path":  "covers/rm2.png",
+                                        "url":  "dist/covers/rm2.png",
+                                        "sha256":  "500c7ec829ac88271e121f64bb03993ffc68cf53ca4d643b3bbc407d5a87a9de"
                                     }
                                 ],
                       "process":  "Redmatch 2.exe",
                       "dll":  "redmatch2/LaynexRm2.dll",
                       "name":  "Redmatch 2",
+                      "cover":  "covers/rm2.png",
                       "status":  "Undetected",
                       "accent":  0,
                       "injector":  "redmatch2/LaynexRm2Injector.exe",
@@ -37,11 +43,17 @@
                                         "path":  "onearmedrobber/one_armed_robber_int.dll",
                                         "url":  "dist/onearmedrobber/one_armed_robber_int.dll",
                                         "sha256":  "cc694b9ce52fa121a5f3d8f8996db4b94af25b5233a219053308d958d227bb56"
+                                    },
+                                    {
+                                        "path":  "covers/oar.png",
+                                        "url":  "dist/covers/oar.png",
+                                        "sha256":  "a906ab9603c83fbdb7b3374036aff77db2cf6b76ee95fe397022e94cdba39766"
                                     }
                                 ],
                       "process":  "OAR-Win64-Shipping.exe",
                       "dll":  "onearmedrobber/one_armed_robber_int.dll",
                       "name":  "One Armed Robber",
+                      "cover":  "covers/oar.png",
                       "status":  "Undetected",
                       "accent":  1,
                       "injector":  "",

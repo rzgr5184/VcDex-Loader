@@ -32,6 +32,7 @@ set(APP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/http.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sha256.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inject.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/images.cpp
 )
 
 add_executable(VcDexLoader WIN32

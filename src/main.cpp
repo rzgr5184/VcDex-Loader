@@ -1,5 +1,6 @@
 #include "app.hpp"
 #include "config.hpp"
+#include "images.hpp"
 
 #include <windows.h>
 #include <d3d11.h>
@@ -32,6 +33,7 @@ ID3D11RenderTargetView* g_renderTarget = nullptr;
 HWND g_hwnd = nullptr;
 bool g_running = true;
 float g_scale = 1.0f;
+float g_bootElapsed = 0.0f;
 
 struct FontSet {
     ImFont* caption = nullptr;
@@ -113,6 +115,93 @@ std::string InitialsFor(const GameEntry& game) {
     }
     if (initials.empty()) initials = "VC";
     return initials;
+}
+
+ImTextureID TexId(ID3D11ShaderResourceView* srv) {
+    return static_cast<ImTextureID>(reinterpret_cast<uintptr_t>(srv));
+}
+
+std::wstring Utf8ToWide(const std::string& text) {
+    if (text.empty()) return {};
+    const int needed = MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, nullptr, 0);
+    if (needed <= 1) return {};
+    std::wstring result(static_cast<std::size_t>(needed - 1), L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, result.data(), needed);
+    return result;
+}
+
+// Covers are downloaded by the updater into data/covers/. Reload them when the
+// file timestamp changes, falling back to the embedded resource on failure.
+void SyncCoverTextures(const AppUiState& state) {
+    const auto dataDir = app::DataDir();
+
+    for (const auto& game : state.games) {
+        if (game.coverRel.empty()) continue;
+
+        images::Id id;
+        if (game.id == "redmatch2") {
+            id = images::Redmatch2Cover;
+        } else if (game.id == "onearmedrobber") {
+            id = images::OneArmedCover;
+        } else {
+            continue;
+        }
+
+        images::LoadFile(id, dataDir / Utf8ToWide(game.coverRel));
+    }
+}
+
+ID3D11ShaderResourceView* CoverFor(const GameEntry& game) {
+    if (game.id == "redmatch2") return images::Srv(images::Redmatch2Cover);
+    if (game.id == "onearmedrobber") return images::Srv(images::OneArmedCover);
+    return nullptr;
+}
+
+int CoverWidthFor(const GameEntry& game) {
+    if (game.id == "redmatch2") return images::Width(images::Redmatch2Cover);
+    if (game.id == "onearmedrobber") return images::Width(images::OneArmedCover);
+    return 0;
+}
+
+int CoverHeightFor(const GameEntry& game) {
+    if (game.id == "redmatch2") return images::Height(images::Redmatch2Cover);
+    if (game.id == "onearmedrobber") return images::Height(images::OneArmedCover);
+    return 0;
+}
+
+// Draws a texture cropped like CSS `object-fit: cover` inside the given rect.
+void DrawImageCover(ImDrawList* draw, ID3D11ShaderResourceView* srv, int srcW, int srcH,
+                    ImVec2 pos, ImVec2 size, float rounding, ImU32 tint) {
+    if (!srv || srcW <= 0 || srcH <= 0 || size.x <= 0.0f || size.y <= 0.0f) {
+        draw->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y),
+                            WithAlpha(tint, 26), rounding);
+        return;
+    }
+
+    const float dstAspect = size.x / size.y;
+    const float srcAspect = static_cast<float>(srcW) / static_cast<float>(srcH);
+
+    ImVec2 uv0(0.0f, 0.0f);
+    ImVec2 uv1(1.0f, 1.0f);
+
+    if (srcAspect > dstAspect) {
+        const float fraction = dstAspect / srcAspect;
+        uv0.x = (1.0f - fraction) * 0.5f;
+        uv1.x = 1.0f - uv0.x;
+    } else {
+        const float fraction = srcAspect / dstAspect;
+        uv0.y = (1.0f - fraction) * 0.5f;
+        uv1.y = 1.0f - uv0.y;
+    }
+
+    draw->AddImageRounded(TexId(srv), pos, ImVec2(pos.x + size.x, pos.y + size.y),
+                          uv0, uv1, tint, rounding);
+}
+
+float EaseOutCubic(float value) {
+    value = Clamp01(value);
+    const float inverse = 1.0f - value;
+    return 1.0f - inverse * inverse * inverse;
 }
 
 // ---------------------------------------------------------------- draw helpers
@@ -269,17 +358,32 @@ void DrawSidebar(const AppUiState& state, float width, float height) {
     // Logo
     const float logoSize = 38.0f * g_scale;
     const ImVec2 logoPos(22.0f * g_scale, 22.0f * g_scale);
-    draw->AddRectFilled(logoPos, ImVec2(logoPos.x + logoSize, logoPos.y + logoSize),
-                        WithAlpha(kAccent, 30), 11.0f * g_scale);
-    draw->AddRect(logoPos, ImVec2(logoPos.x + logoSize, logoPos.y + logoSize),
-                  WithAlpha(kAccent, 120), 11.0f * g_scale, 0, 1.0f);
+    const float logoPulse = 0.5f + 0.5f * std::sin(static_cast<float>(ImGui::GetTime()) * 2.0f);
+    const ImVec2 logoCenter(logoPos.x + logoSize * 0.5f, logoPos.y + logoSize * 0.5f);
 
-    const std::string mark = "V";
-    const ImVec2 markSize = Measure(g_fonts.icon, 22.0f * g_scale, mark);
-    DrawTextAt(draw, g_fonts.icon, 22.0f * g_scale,
-             ImVec2(logoPos.x + (logoSize - markSize.x) * 0.5f,
-                    logoPos.y + (logoSize - markSize.y) * 0.5f - 1.0f * g_scale),
-             kAccent, mark);
+    draw->AddCircleFilled(logoCenter, logoSize * 0.92f,
+                          WithAlpha(kAccent, 8 + static_cast<int>(12.0f * logoPulse)), 48);
+    draw->AddRectFilled(logoPos, ImVec2(logoPos.x + logoSize, logoPos.y + logoSize),
+                        WithAlpha(kAccent, 26), 11.0f * g_scale);
+    draw->AddRect(logoPos, ImVec2(logoPos.x + logoSize, logoPos.y + logoSize),
+                  WithAlpha(kAccent, 95 + static_cast<int>(45.0f * logoPulse)),
+                  11.0f * g_scale, 0, 1.2f);
+
+    ID3D11ShaderResourceView* logoSrv = images::Srv(images::VcLogo);
+    if (logoSrv) {
+        const float inset = 3.0f * g_scale;
+        DrawImageCover(draw, logoSrv, images::Width(images::VcLogo), images::Height(images::VcLogo),
+                       ImVec2(logoPos.x + inset, logoPos.y + inset),
+                       ImVec2(logoSize - inset * 2.0f, logoSize - inset * 2.0f),
+                       8.0f * g_scale, IM_COL32_WHITE);
+    } else {
+        const std::string mark = "V";
+        const ImVec2 markSize = Measure(g_fonts.icon, 22.0f * g_scale, mark);
+        DrawTextAt(draw, g_fonts.icon, 22.0f * g_scale,
+                   ImVec2(logoPos.x + (logoSize - markSize.x) * 0.5f,
+                          logoPos.y + (logoSize - markSize.y) * 0.5f - 1.0f * g_scale),
+                   kAccent, mark);
+    }
 
     DrawTextAt(draw, g_fonts.title, 21.0f * g_scale,
              ImVec2(logoPos.x + logoSize + 12.0f * g_scale, logoPos.y + 2.0f * g_scale),
@@ -406,6 +510,10 @@ void DrawUpdateBanner(const AppUiState& state, float x, float width, float y, bo
     draw->AddRectFilled(topLeft, bottomRight, WithAlpha(kViolet, 18), 12.0f * g_scale);
     draw->AddRect(topLeft, bottomRight, WithAlpha(kViolet, 70), 12.0f * g_scale, 0, 1.0f);
 
+    const float bannerPulse = 0.5f + 0.5f * std::sin(static_cast<float>(ImGui::GetTime()) * 3.1f);
+    draw->AddCircle(ImVec2(x + 20.0f * g_scale, y + height * 0.5f),
+                    4.0f * g_scale + 3.0f * g_scale * bannerPulse,
+                    WithAlpha(kViolet, 45), 16, 1.0f);
     draw->AddCircleFilled(ImVec2(x + 20.0f * g_scale, y + height * 0.5f),
                           4.0f * g_scale, kViolet, 12);
 
@@ -454,33 +562,53 @@ void DrawGameCard(const GameEntry& game, int index, ImVec2 pos, ImVec2 size,
                   selected ? WithAlpha(accent, 190) : kBorder, 16.0f * g_scale, 0,
                   selected ? 1.6f * g_scale : 1.0f * g_scale);
 
-    // Icon tile
-    const float tile = 72.0f * g_scale;
-    const ImVec2 tilePos(pos.x + 22.0f * g_scale, pos.y + 24.0f * g_scale);
-    draw->AddRectFilled(tilePos, ImVec2(tilePos.x + tile, tilePos.y + tile),
-                        WithAlpha(accent, 34), 15.0f * g_scale);
-    draw->AddRect(tilePos, ImVec2(tilePos.x + tile, tilePos.y + tile),
-                  WithAlpha(accent, 105), 15.0f * g_scale, 0, 1.2f * g_scale);
+    // Cover tile (animated hover zoom + glow)
+    static float coverHover[32] = {};
+    const int hoverIndex = std::clamp(index, 0, 31);
+    coverHover[hoverIndex] = Approach(coverHover[hoverIndex], hovered ? 1.0f : 0.0f,
+                                      14.0f, ImGui::GetIO().DeltaTime);
+    const float coverGlow = coverHover[hoverIndex];
 
-    const std::string initials = InitialsFor(game);
-    const ImVec2 initialsSize = Measure(g_fonts.icon, 26.0f * g_scale, initials);
-    DrawTextAt(draw, g_fonts.icon, 26.0f * g_scale,
-             ImVec2(tilePos.x + (tile - initialsSize.x) * 0.5f,
-                    tilePos.y + (tile - initialsSize.y) * 0.5f - 2.0f * g_scale),
-             accent, initials);
+    const float tile = 96.0f * g_scale;
+    const ImVec2 tilePos(pos.x + 18.0f * g_scale, pos.y + 18.0f * g_scale);
+    const ImVec2 tileEnd(tilePos.x + tile, tilePos.y + tile);
+
+    draw->AddRectFilled(ImVec2(tilePos.x - 2.0f, tilePos.y - 2.0f),
+                        ImVec2(tileEnd.x + 2.0f, tileEnd.y + 2.0f),
+                        WithAlpha(accent, 22 + static_cast<int>(28.0f * coverGlow)),
+                        17.0f * g_scale);
+
+    const float grow = 2.0f * g_scale * coverGlow;
+    ID3D11ShaderResourceView* cover = CoverFor(game);
+    if (cover) {
+        DrawImageCover(draw, cover, CoverWidthFor(game), CoverHeightFor(game),
+                       ImVec2(tilePos.x - grow * 0.5f, tilePos.y - grow * 0.5f),
+                       ImVec2(tile + grow, tile + grow), 15.0f * g_scale, IM_COL32_WHITE);
+    } else {
+        draw->AddRectFilled(tilePos, tileEnd, WithAlpha(accent, 34), 15.0f * g_scale);
+        const std::string initials = InitialsFor(game);
+        const ImVec2 initialsSize = Measure(g_fonts.icon, 30.0f * g_scale, initials);
+        DrawTextAt(draw, g_fonts.icon, 30.0f * g_scale,
+                   ImVec2(tilePos.x + (tile - initialsSize.x) * 0.5f,
+                          tilePos.y + (tile - initialsSize.y) * 0.5f - 2.0f * g_scale),
+                   accent, initials);
+    }
+    draw->AddRect(tilePos, tileEnd,
+                  WithAlpha(accent, 105 + static_cast<int>(105.0f * coverGlow)),
+                  15.0f * g_scale, 0, 1.2f * g_scale);
 
     // Text block
-    const float textX = tilePos.x + tile + 18.0f * g_scale;
+    const float textX = tilePos.x + tile + 16.0f * g_scale;
     DrawTextAt(draw, g_fonts.title, 19.0f * g_scale,
-             ImVec2(textX, pos.y + 24.0f * g_scale), kText, game.name);
+             ImVec2(textX, pos.y + 20.0f * g_scale), kText, game.name);
     DrawTextAt(draw, g_fonts.body, 11.5f * g_scale,
-             ImVec2(textX, pos.y + 54.0f * g_scale), kTextDim, game.subtitle);
+             ImVec2(textX, pos.y + 48.0f * g_scale), kTextDim, game.subtitle);
 
-    DrawStatusPill(draw, ImVec2(textX, pos.y + 82.0f * g_scale),
+    DrawStatusPill(draw, ImVec2(textX, pos.y + 76.0f * g_scale),
                    game.status, StatusColor(game.status));
 
     DrawSpaced(draw, g_fonts.medium, 8.5f * g_scale,
-               ImVec2(textX, pos.y + 122.0f * g_scale), kTextFaint, game.tag, 1.6f * g_scale);
+               ImVec2(textX, pos.y + 114.0f * g_scale), kTextFaint, game.tag, 1.6f * g_scale);
 
     // Bottom row: readiness
     const float bottomY = pos.y + size.y - 32.0f * g_scale;
@@ -529,10 +657,37 @@ void DrawBusyOverlay(const AppUiState& state, float width, float height, float o
 
     const ImVec2 center(cardPos.x + cardSize.x * 0.5f, cardPos.y + 64.0f * g_scale);
     const float time = static_cast<float>(ImGui::GetTime());
+    const float orbit = time * 1.9f;
+    const float loaderScale = 0.88f + 0.12f * (0.5f + 0.5f * std::sin(time * 2.6f));
 
-    draw->AddCircleFilled(center, 30.0f * g_scale, WithAlpha(kAccent, static_cast<int>(16 * alpha)), 40);
-    DrawSpinner(draw, center, 20.0f * g_scale, 3.2f * g_scale,
-                WithAlpha(kAccent, static_cast<int>(235 * alpha)), time);
+    for (int i = 0; i < 4; ++i) {
+        const float angle = orbit + static_cast<float>(i) * 1.5707963f;
+        const ImVec2 dot(center.x + std::cos(angle) * 38.0f * g_scale,
+                         center.y + std::sin(angle) * 38.0f * g_scale);
+        draw->AddCircleFilled(dot, (2.6f + static_cast<float>(3 - i) * 0.6f) * g_scale,
+                              WithAlpha(kAccent, static_cast<int>((110 + i * 28) * alpha)), 16);
+    }
+
+    draw->AddCircleFilled(center, 30.0f * g_scale * loaderScale,
+                          WithAlpha(kAccent, static_cast<int>(16 * alpha)), 40);
+    ID3D11ShaderResourceView* busyLogo = images::Srv(images::VcLogo);
+    if (busyLogo) {
+        const float angle = time * 1.25f;
+        const float half = 16.0f * g_scale * loaderScale;
+        const float c = std::cos(angle);
+        const float s = std::sin(angle);
+        auto corner = [&](float dx, float dy) {
+            return ImVec2(center.x + dx * c - dy * s, center.y + dx * s + dy * c);
+        };
+        draw->AddImageQuad(TexId(busyLogo),
+                           corner(-half, -half), corner(half, -half),
+                           corner(half, half), corner(-half, half),
+                           ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1),
+                           WithAlpha(IM_COL32_WHITE, static_cast<int>(245 * alpha)));
+    } else {
+        DrawSpinner(draw, center, 20.0f * g_scale, 3.2f * g_scale,
+                    WithAlpha(kAccent, static_cast<int>(235 * alpha)), time);
+    }
 
     TextCentered(draw, g_fonts.title, 20.0f * g_scale, ImVec2(cardPos.x + cardSize.x * 0.5f, 0),
                  cardPos.y + 108.0f * g_scale, WithAlpha(kText, static_cast<int>(255 * alpha)),
@@ -570,7 +725,11 @@ void DrawBusyOverlay(const AppUiState& state, float width, float height, float o
 }
 
 void DrawToast(const AppUiState& state, float width, float height, bool busy) {
-    if (state.toast.empty() || state.toastTimer <= 0.0f) return;
+    static float toastSlide = 0.0f;
+    const bool visible = !state.toast.empty() && state.toastTimer > 0.0f;
+    toastSlide = Approach(toastSlide, visible ? 1.0f : 0.0f, 18.0f,
+                          ImGui::GetIO().DeltaTime);
+    if (!visible) return;
 
     ImDrawList* draw = ImGui::GetWindowDrawList();
 
@@ -584,7 +743,8 @@ void DrawToast(const AppUiState& state, float width, float height, bool busy) {
 
     const float w = std::min(width - 80.0f * g_scale, measure.x + 52.0f * g_scale);
     const float h = 40.0f * g_scale;
-    const ImVec2 pos((width - w) * 0.5f, height - 158.0f * g_scale);
+    const float slide = (1.0f - EaseOutCubic(toastSlide)) * 20.0f * g_scale;
+    const ImVec2 pos((width - w) * 0.5f, height - 158.0f * g_scale + slide);
 
     draw->AddRectFilled(pos, ImVec2(pos.x + w, pos.y + h),
                         WithAlpha(IM_COL32(20, 25, 33, 255), static_cast<int>(245 * alpha)),
@@ -600,6 +760,105 @@ void DrawToast(const AppUiState& state, float width, float height, bool busy) {
              WithAlpha(kText, static_cast<int>(255 * alpha)), message);
 }
 
+void DrawSplash(const AppUiState& state, float width, float height, float alpha) {
+    if (alpha <= 0.003f) return;
+
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    const float a = Clamp01(alpha);
+    auto A = [a](int value) { return static_cast<int>(value * a); };
+
+    const float t = g_bootElapsed;
+
+    draw->AddRectFilled(ImVec2(0, 0), ImVec2(width, height), WithAlpha(kBg, A(255)));
+
+    // Soft animated orbs behind the logo.
+    const float driftX = std::sin(t * 0.55f) * width * 0.06f;
+    const float driftY = std::cos(t * 0.42f) * height * 0.05f;
+    draw->AddCircleFilled(ImVec2(width * 0.52f + driftX, height * 0.40f + driftY),
+                          width * 0.30f, WithAlpha(kAccent, A(11)), 96);
+    draw->AddCircleFilled(ImVec2(width * 0.46f - driftX, height * 0.58f - driftY),
+                          width * 0.26f, WithAlpha(kViolet, A(13)), 96);
+
+    const ImVec2 center(width * 0.5f, height * 0.40f);
+    const float base = 66.0f * g_scale;
+    const float pulse = 0.5f + 0.5f * std::sin(t * 2.4f);
+
+    draw->AddCircle(center, base + 24.0f * g_scale,
+                    WithAlpha(kAccent, A(22 + static_cast<int>(22.0f * pulse))),
+                    96, 1.4f * g_scale);
+    draw->AddCircle(center, base + 36.0f * g_scale, WithAlpha(kViolet, A(16)), 96,
+                    1.0f * g_scale);
+
+    for (int i = 0; i < 3; ++i) {
+        const float start = t * 1.55f + static_cast<float>(i) * 2.094f;
+        draw->PathArcTo(center, base + 24.0f * g_scale, start, start + 1.05f, 48);
+        draw->PathStroke(WithAlpha(i == 0 ? kAccent : kViolet, A(150 - i * 38)), 0,
+                         2.2f * g_scale);
+    }
+
+    // Rotating VcDex logo.
+    ID3D11ShaderResourceView* logoSrv = images::Srv(images::VcLogo);
+    if (logoSrv) {
+        const float angle = t * 1.35f;
+        const float half = base * 0.88f;
+        const float c = std::cos(angle);
+        const float s = std::sin(angle);
+        auto corner = [&](float dx, float dy) {
+            return ImVec2(center.x + dx * c - dy * s, center.y + dx * s + dy * c);
+        };
+        draw->AddImageQuad(TexId(logoSrv),
+                           corner(-half, -half), corner(half, -half),
+                           corner(half, half), corner(-half, half),
+                           ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1),
+                           WithAlpha(IM_COL32_WHITE, A(255)));
+    } else {
+        TextCentered(draw, g_fonts.title, 52.0f * g_scale, ImVec2(width * 0.5f, 0),
+                     center.y - 30.0f * g_scale, WithAlpha(kAccent, A(255)), "V");
+    }
+
+    TextCentered(draw, g_fonts.title, 34.0f * g_scale, ImVec2(width * 0.5f, 0),
+                 center.y + base + 38.0f * g_scale, WithAlpha(kText, A(255)), "VcDex");
+
+    const std::string sub = "LOADER";
+    float subWidth = 0.0f;
+    for (char ch : sub)
+        subWidth += Measure(g_fonts.medium, 10.0f * g_scale, std::string(1, ch)).x +
+                    4.0f * g_scale;
+    subWidth -= 4.0f * g_scale;
+    DrawSpaced(draw, g_fonts.medium, 10.0f * g_scale,
+               ImVec2(width * 0.5f - subWidth * 0.5f, center.y + base + 82.0f * g_scale),
+               WithAlpha(kTextFaint, A(255)), sub, 4.0f * g_scale);
+
+    const std::string detail = Ellipsize(
+        state.detail.empty() ? "Preparing VcDex..." : state.detail, 72);
+    TextCentered(draw, g_fonts.body, 11.5f * g_scale, ImVec2(width * 0.5f, 0),
+                 center.y + base + 108.0f * g_scale, WithAlpha(kTextDim, A(255)), detail);
+
+    const float barW = 300.0f * g_scale;
+    const float barH = 5.0f * g_scale;
+    const ImVec2 barPos((width - barW) * 0.5f, center.y + base + 136.0f * g_scale);
+
+    draw->AddRectFilled(barPos, ImVec2(barPos.x + barW, barPos.y + barH),
+                        WithAlpha(IM_COL32(255, 255, 255, 255), A(18)), barH * 0.5f);
+
+    const float fill = state.indeterminate ? 0.30f : Clamp01(state.progress);
+    float fillX = barPos.x;
+    const float fillW = barW * fill;
+    if (state.indeterminate) {
+        const float cycle = std::fmod(t * 0.55f, 1.0f);
+        fillX = barPos.x + (barW - fillW) * cycle;
+    }
+    draw->AddRectFilled(ImVec2(fillX, barPos.y), ImVec2(fillX + fillW, barPos.y + barH),
+                        WithAlpha(kAccent, A(255)), barH * 0.5f);
+
+    const std::string version = "VCDEX LOADER   v" + state.localVersion;
+    TextCentered(draw, g_fonts.medium, 9.0f * g_scale, ImVec2(width * 0.5f, 0),
+                 height - 54.0f * g_scale, WithAlpha(kTextFaint, A(255)), version);
+    TextCentered(draw, g_fonts.body, 9.5f * g_scale, ImVec2(width * 0.5f, 0),
+                 height - 36.0f * g_scale, WithAlpha(IM_COL32(72, 80, 94, 255), A(255)),
+                 "made by Laynex");
+}
+
 void DrawUi() {
     ImGuiIO& io = ImGui::GetIO();
     const float width = io.DisplaySize.x;
@@ -609,6 +868,30 @@ void DrawUi() {
     const AppUiState state = app::Snapshot();
     const bool busy = state.busy;
     const float scale = g_scale;
+
+    static float coverRefresh = 0.0f;
+    coverRefresh += dt;
+    if (coverRefresh > 0.4f) {
+        coverRefresh = 0.0f;
+        SyncCoverTextures(state);
+    }
+
+    g_bootElapsed += dt;
+
+    // Auto-apply updates during the boot splash, as requested.
+    static bool autoUpdateStarted = false;
+    if (!autoUpdateStarted && state.updateAvailable && !state.checking && !state.busy &&
+        g_bootElapsed > 1.2f) {
+        autoUpdateStarted = true;
+        app::StartSelfUpdate();
+    }
+
+    const bool splashWanted = state.checking || g_bootElapsed < 1.8f ||
+        (autoUpdateStarted && (state.busy || !state.toastError));
+
+    static float splashAlpha = 1.0f;
+    splashAlpha = Approach(splashAlpha, splashWanted ? 1.0f : 0.0f, 6.0f, dt);
+    const bool booting = splashAlpha > 0.45f;
 
     static float overlay = 0.0f;
     overlay = Approach(overlay, busy ? 1.0f : 0.0f, 14.0f, dt);
@@ -627,10 +910,15 @@ void DrawUi() {
     ImDrawList* draw = ImGui::GetWindowDrawList();
 
     draw->AddRectFilled(ImVec2(0, 0), ImVec2(width, height), kBg);
-    draw->AddCircleFilled(ImVec2(width * 0.78f, -height * 0.15f), width * 0.42f,
-                          IM_COL32(126, 96, 255, 9), 96);
-    draw->AddCircleFilled(ImVec2(width * 0.16f, height * 1.12f), width * 0.36f,
-                          IM_COL32(120, 230, 90, 7), 96);
+
+    // Slow drifting aurora blobs.
+    const float bgTime = static_cast<float>(ImGui::GetTime());
+    const float bgX = std::sin(bgTime * 0.35f) * width * 0.05f;
+    const float bgY = std::cos(bgTime * 0.27f) * height * 0.05f;
+    draw->AddCircleFilled(ImVec2(width * 0.78f + bgX, -height * 0.15f + bgY),
+                          width * 0.42f, IM_COL32(126, 96, 255, 9), 96);
+    draw->AddCircleFilled(ImVec2(width * 0.16f - bgX, height * 1.12f - bgY),
+                          width * 0.36f, IM_COL32(120, 230, 90, 7), 96);
 
     const float sidebarW = 222.0f * scale;
 
@@ -656,7 +944,7 @@ void DrawUi() {
 
     float contentY = 96.0f * scale;
     if (state.updateAvailable) {
-        DrawUpdateBanner(state, contentX, contentW, contentY, busy);
+        DrawUpdateBanner(state, contentX, contentW, contentY, busy || booting);
         contentY += 66.0f * scale;
     }
 
@@ -686,7 +974,7 @@ void DrawUi() {
         if (pos.y + cardH > height - 112.0f * scale) break;
 
         DrawGameCard(state.games[static_cast<std::size_t>(i)], i, pos,
-                     ImVec2(cardW, cardH), state.selected == i, busy);
+                     ImVec2(cardW, cardH), state.selected == i, busy || booting);
     }
 
     // Footer
@@ -713,13 +1001,14 @@ void DrawUi() {
     const float loadH = 50.0f * scale;
     const ImVec2 loadPos(width - 30.0f * scale - loadW, height - 75.0f * scale);
 
-    const bool canLoad = hasSelection && !busy && selectedGame != nullptr;
+    const bool canLoad = hasSelection && !busy && !booting && selectedGame != nullptr;
 
     if (CustomButton("##open_folder", ImVec2(loadPos.x - 130.0f * scale - 10.0f * scale,
                                              loadPos.y + 7.0f * scale),
                      ImVec2(130.0f * scale, 36.0f * scale), "OPEN FOLDER",
                      IM_COL32(255, 255, 255, 8), IM_COL32(255, 255, 255, 16),
-                     kTextDim, g_fonts.medium, 9.5f * scale, 9.0f * scale, hasSelection)) {
+                     kTextDim, g_fonts.medium, 9.5f * scale, 9.0f * scale,
+                     hasSelection && !booting)) {
         app::OpenSelectedFolder();
     }
 
@@ -731,16 +1020,21 @@ void DrawUi() {
     }
 
     // Keyboard shortcut
-    if (!busy && hasSelection && ImGui::IsKeyPressed(ImGuiKey_Enter, false))
+    if (!busy && !booting && hasSelection && ImGui::IsKeyPressed(ImGuiKey_Enter, false))
         app::LoadSelectedGame();
 
-    if (!busy && state.updateAvailable && ImGui::IsKeyPressed(ImGuiKey_F5, false))
+    if (!busy && !booting && state.updateAvailable && ImGui::IsKeyPressed(ImGuiKey_F5, false))
         app::StartSelfUpdate();
 
     // Hidden Settings placeholder hit test is part of the sidebar.
 
-    DrawToast(state, width, height, busy);
-    DrawBusyOverlay(state, width, height, overlay);
+    if (!booting) {
+        DrawToast(state, width, height, busy);
+        DrawBusyOverlay(state, width, height, overlay);
+    }
+
+    if (splashAlpha > 0.003f)
+        DrawSplash(state, width, height, splashAlpha);
 
     ImGui::End();
 }
@@ -955,6 +1249,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     ImGui_ImplWin32_Init(g_hwnd);
     ImGui_ImplDX11_Init(g_device, g_context);
 
+    images::Init(g_device);
+
     ShowWindow(g_hwnd, SW_SHOW);
     UpdateWindow(g_hwnd);
 
@@ -995,6 +1291,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
 
         g_swapChain->Present(1, 0);
     }
+
+    images::Shutdown();
 
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();

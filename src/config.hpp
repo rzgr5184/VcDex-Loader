@@ -9,7 +9,7 @@ namespace config {
 
 inline constexpr const char* kProductName    = "VcDex Loader";
 inline constexpr const char* kAuthor         = "Laynex";
-inline constexpr const char* kVersion        = "1.0.0";
+inline constexpr const char* kVersion        = "1.1.0";
 
 inline constexpr const char* kOwner          = "rzgr5184";
 inline constexpr const char* kRepo           = "VcDex-Loader";
