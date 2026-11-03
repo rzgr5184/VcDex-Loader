@@ -62,6 +62,7 @@ struct AppUiState {
 
 namespace app {
 
+void InitPaths();
 void Init(HWND hwnd);
 AppUiState Snapshot();
 

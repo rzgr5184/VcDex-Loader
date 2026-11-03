@@ -1151,8 +1151,8 @@ void StartBackgroundCheck() {
 
 } // namespace
 
-void Init(HWND hwnd) {
-    (void)hwnd;
+void InitPaths() {
+    if (!g_exePath.empty() && !g_dataDir.empty()) return;
 
     wchar_t modulePath[MAX_PATH * 4]{};
     GetModuleFileNameW(nullptr, modulePath, static_cast<DWORD>(std::size(modulePath)));
@@ -1163,8 +1163,16 @@ void Init(HWND hwnd) {
 
     std::error_code ec;
     std::filesystem::create_directories(g_dataDir, ec);
+}
+
+void Init(HWND hwnd) {
+    (void)hwnd;
+
+    InitPaths();
 
     Log("Runtime: exe=" + Narrow(g_exePath.wstring()) + " data=" + Narrow(g_dataDir.wstring()));
+
+    std::error_code ec;
 
     {
         std::lock_guard<std::mutex> lock(g_mutex);

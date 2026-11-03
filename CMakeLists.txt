@@ -29,6 +29,13 @@ set(IMGUI_SOURCES
 set(APP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/theme.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/backdrop.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/settings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui_pages.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui_settings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui_splash.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/http.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sha256.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/inject.cpp

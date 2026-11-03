@@ -3,8 +3,19 @@
 Oyun hilelerini tek tikla yukleyen, GitHub uzerinden otomatik guncellenen Windows loader.
 
 - **Yapimci:** Laynex
-- **Surum:** 1.2.1
+- **Surum:** 1.3.0
 - **Platform:** Windows 10 / 11 (x64)
+
+## Yenilikler (1.3.0)
+
+- **Tamamen yeni arayuz:** likit turkuaz / mavi / beyaz tema, GPU uzerinde calisan dalgali arka plan, cam (glass) paneller, yumusak gecisler ve mikro animasyonlar.
+- **5 secilebilir tema:** Lagoon (varsayilan), Aurora, Ember, Matcha ve Ice. Tema secimi aninda onizlenir ve `data/settings.json` icinde saklanir.
+- **Ayarlar sayfasi:** tema kartlari, animasyon / partikul / parallax anahtarlari, arka plan siddeti, cam blur kalitesi (LOW / HIGH) ve reduce motion secenegi.
+- **Kalici tercihler:** tema, efektler ve pencere boyutu atomik olarak `data/settings.json` dosyasina yazilir; guncellemeler bu dosyaya dokunmaz.
+- **Yeni kutuphane duzeni:** one cikan oyun icin buyuk hero karti, kapak gorselleri, detay paneli, arama (`Ctrl+K`), guncelleme bandi ve durum cubugu.
+- **Animasyonlu splash korundu:** acilista surum kontrolu, otomatik guncelleme ve dosya dogrulama akisi aynen calisir.
+- **Guvenli geri donus:** GPU arka plani veya blur olusturulamazsa arayuz gradient tabanli yedek gorunume otomatik gecer.
+- **Guncelleme / enjeksiyon mantigi degismedi:** otomatik guncelleme, SHA-256 onarimi, self-heal ve DLL enjeksiyonu onceki surumlerle ayni sekilde calisir.
 
 ## Yenilikler (1.2.1)
 
@@ -45,6 +56,8 @@ Guncelleme varsa acilista splash sirasinda otomatik uygulanir. Uygulama acikken 
 
 Elle kontrol: `F5` (guncelleme yoksa dosya dogrulama yapar). Guncelleme gunlugu: `data/logs/update.log`.
 
+Kisayollar: `Ctrl+K` arama alanina odaklanir, `Enter` secili oyunu yukler, `Esc` aramayi temizler / ayarlardan kutuphaneye doner. Tema ve efektler **Settings -> Appearance** bolumunden degistirilir.
+
 | Oyun | Enjeksiyon | Tuslar |
 | --- | --- | --- |
 | Redmatch 2 | `LaynexRm2Injector.exe` (bypass, erken enjeksiyon) | `INSERT` menu / `END` unload |
@@ -66,6 +79,7 @@ data/
     rm2.png
     oar.png
   manifest.json        <- son bilinen manifest (offline yedek)
+  settings.json        <- tema, efektler ve pencere tercihleri
   logs/update.log      <- guncelleme gunlugu
   .managed             <- yonetilen dosya listesi (eski dosya temizligi)
 ```
